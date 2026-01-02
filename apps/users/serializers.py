@@ -1,7 +1,14 @@
-# apps/users/serializers.py
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
-from .models import User
+
+User = get_user_model()
+
+
+class UserPublicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id", "username", "email", "phone", "role", "is_superuser")
+        read_only_fields = fields
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -9,13 +16,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "username", "email", "phone", "password")
+        fields = ("username", "email", "phone", "password")
 
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
+        # Default role is CUSTOMER (per model default)
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data["email"],
+            phone=validated_data["phone"],
+            password=validated_data["password"],
+        )
         return user
 
 
@@ -27,25 +37,31 @@ class LoginSerializer(serializers.Serializer):
         identifier = attrs["identifier"]
         password = attrs["password"]
 
-        # Find user by username OR email OR phone
+        # Find by username OR email OR phone (per PDF requirement) :contentReference[oaicite:1]{index=1}
         user = (
             User.objects.filter(username=identifier).first()
             or User.objects.filter(email=identifier).first()
             or User.objects.filter(phone=identifier).first()
         )
         if not user:
-            raise serializers.ValidationError("Invalid credentials.")
+            raise serializers.ValidationError({"identifier": "User not found."})
 
-        # Authenticate using username + password (Django default backend)
-        user = authenticate(username=user.username, password=password)
-        if not user:
-            raise serializers.ValidationError("Invalid credentials.")
+        # Authenticate using username/password (default Django backend)
+        authed = authenticate(username=user.username, password=password)
+        if not authed:
+            raise serializers.ValidationError({"password": "Invalid credentials."})
 
-        attrs["user"] = user
+        attrs["user"] = authed
         return attrs
 
 
-class MeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ("id", "username", "email", "phone", "role", "is_staff", "is_superuser")
+class AuthResponseSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    user = UserPublicSerializer()
+
+
+class RoleChangeResponseSerializer(UserPublicSerializer):
+    """
+    Just a named serializer for role-change responses (same fields).
+    """
+    pass
