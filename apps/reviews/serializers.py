@@ -36,3 +36,12 @@ class ReviewSerializer(serializers.ModelSerializer):
             rating=validated_data["rating"],
             comment=validated_data.get("comment", ""),
         )
+
+
+class ReviewPublicSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(source="author.username", read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ("id", "ad", "author", "author_username", "rating", "comment", "created_at")
+        read_only_fields = fields

@@ -80,3 +80,23 @@ class AdAssignSerializer(serializers.Serializer):
 class AdReviewCreateSerializer(serializers.Serializer):
     rating = serializers.IntegerField(min_value=1, max_value=5)
     comment = serializers.CharField(required=False, allow_blank=True)
+
+
+class AdSummarySerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for profile endpoints (avoid huge nested payloads).
+    """
+    class Meta:
+        model = Ad
+        fields = (
+            "id",
+            "title",
+            "category",
+            "status",
+            "created_at",
+            "scheduled_at",
+            "location",
+            "assigned_contractor",
+            "completed_at",
+        )
+        read_only_fields = fields

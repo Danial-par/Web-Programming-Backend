@@ -17,6 +17,7 @@ urlpatterns = [
 
     # API routes (split per app)
     path("api/auth/", include("apps.users.urls")),
+    path("api/profiles/", include("apps.users.profile_urls")),
     path("api/ads/", include("apps.ads.urls")),
     path("api/reviews/", include("apps.reviews.urls")),
     path("api/tickets/", include("apps.tickets.urls")),
