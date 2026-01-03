@@ -12,17 +12,13 @@ class IsAssignedContractorOrAdmin(BasePermission):
         return is_admin(request.user) or obj.assigned_contractor_id == request.user.id
 
 
-class IsAdRequestOwnerOrAdmin(BasePermission):
-    def has_object_permission(self, request, view, obj) -> bool:
-        return is_admin(request.user) or obj.contractor_id == request.user.id
-
-
 class CanViewAd(BasePermission):
     """
-    Visibility rules (PDF):
-    - CANCELED ads visible only to creator + support + admin
+    PDF visibility:
+    - CANCELED ads only visible to creator + support + admin
     - ASSIGNED/DONE visible to creator + assigned contractor + support/admin
-    - OPEN visible to authenticated users (for contractors to apply)
+    - OPEN visible to authenticated users
+    :contentReference[oaicite:2]{index=2}
     """
     def has_object_permission(self, request, view, obj) -> bool:
         u = request.user
