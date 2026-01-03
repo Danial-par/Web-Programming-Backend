@@ -6,7 +6,11 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiExample,
+    OpenApiResponse,
+)
 
 from .permissions import IsAdmin, IsSupportOrAdmin
 from .serializers import (
@@ -24,17 +28,38 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
+        tags=["Auth"],
+        summary="Register",
+        description="Create a new user account (defaults to CUSTOMER role). Returns token for TokenAuth.",
         request=RegisterSerializer,
-        responses={201: AuthResponseSerializer},
+        responses={
+            201: AuthResponseSerializer,
+            400: OpenApiResponse(description="Validation error"),
+        },
         examples=[
             OpenApiExample(
-                "Register example",
-                value={"username": "danial", "email": "danial@example.com", "phone": "09120000000", "password": "StrongPass123"},
+                "Register request",
+                value={
+                    "username": "danial",
+                    "email": "danial@example.com",
+                    "phone": "09120000000",
+                    "password": "StrongPass123",
+                },
                 request_only=True,
             ),
             OpenApiExample(
-                "Register response example",
-                value={"token": "TOKEN_STRING", "user": {"id": 1, "username": "danial", "email": "danial@example.com", "phone": "09120000000", "role": "CUSTOMER", "is_superuser": False}},
+                "Register response",
+                value={
+                    "token": "TOKEN_STRING",
+                    "user": {
+                        "id": 1,
+                        "username": "danial",
+                        "email": "danial@example.com",
+                        "phone": "09120000000",
+                        "role": "CUSTOMER",
+                        "is_superuser": False,
+                    },
+                },
                 response_only=True,
             ),
         ],
@@ -53,18 +78,24 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     @extend_schema(
+        tags=["Auth"],
+        summary="Login",
+        description="Login with identifier + password. Identifier may be username OR email OR phone.",
         request=LoginSerializer,
-        responses={200: AuthResponseSerializer},
+        responses={
+            200: AuthResponseSerializer,
+            400: OpenApiResponse(description="Invalid credentials"),
+        },
         examples=[
             OpenApiExample(
-                "Login example (identifier can be username/email/phone)",
+                "Login request using email",
                 value={"identifier": "danial@example.com", "password": "StrongPass123"},
                 request_only=True,
             ),
             OpenApiExample(
-                "Login response example",
-                value={"token": "TOKEN_STRING", "user": {"id": 1, "username": "danial", "email": "danial@example.com", "phone": "09120000000", "role": "CUSTOMER", "is_superuser": False}},
-                response_only=True,
+                "Login request using phone",
+                value={"identifier": "09120000000", "password": "StrongPass123"},
+                request_only=True,
             ),
         ],
     )
@@ -94,11 +125,21 @@ class SetSupportRoleView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     @extend_schema(
-        responses={200: RoleChangeResponseSerializer},
+        tags=["Auth"],
+        summary="Assign SUPPORT role",
+        description="ADMIN(superuser) only: set a user's role to SUPPORT.",
+        responses={200: RoleChangeResponseSerializer, 403: OpenApiResponse(description="Forbidden")},
         examples=[
             OpenApiExample(
-                "Response example",
-                value={"id": 2, "username": "ali", "email": "ali@example.com", "phone": "09121111111", "role": "SUPPORT", "is_superuser": False},
+                "Role change response",
+                value={
+                    "id": 10,
+                    "username": "support1",
+                    "email": "support1@example.com",
+                    "phone": "09123334444",
+                    "role": "SUPPORT",
+                    "is_superuser": False,
+                },
                 response_only=True,
             )
         ],
@@ -122,14 +163,10 @@ class SetContractorRoleView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsSupportOrAdmin]
 
     @extend_schema(
-        responses={200: RoleChangeResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "Response example",
-                value={"id": 3, "username": "reza", "email": "reza@example.com", "phone": "09122222222", "role": "CONTRACTOR", "is_superuser": False},
-                response_only=True,
-            )
-        ],
+        tags=["Auth"],
+        summary="Assign CONTRACTOR role",
+        description="SUPPORT or ADMIN: set a user's role to CONTRACTOR.",
+        responses={200: RoleChangeResponseSerializer, 403: OpenApiResponse(description="Forbidden")},
     )
     def patch(self, request, pk: int):
         user = get_object_or_404(User, pk=pk)

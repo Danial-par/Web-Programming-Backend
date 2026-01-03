@@ -3,7 +3,12 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiExample,
+    OpenApiResponse,
+)
 
 from apps.users.permissions import IsSupportOrAdmin, is_admin, is_support
 from .models import Ticket
@@ -11,6 +16,35 @@ from .permissions import IsTicketOwnerOrSupportOrAdmin
 from .serializers import TicketRespondSerializer, TicketSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Tickets"],
+        summary="List tickets",
+        description="Users see their own tickets. SUPPORT/ADMIN see all tickets.",
+    ),
+    create=extend_schema(
+        tags=["Tickets"],
+        summary="Create ticket",
+        description="Any user can create a support ticket with title + message (optional ad link).",
+        examples=[
+            OpenApiExample(
+                "Create ticket request",
+                value={"title": "Problem", "message": "Contractor didn't show up.", "ad": 10},
+                request_only=True,
+            )
+        ],
+    ),
+    partial_update=extend_schema(
+        tags=["Tickets"],
+        summary="Edit ticket",
+        description="Owner can edit their ticket; SUPPORT/ADMIN can edit any ticket.",
+    ),
+    destroy=extend_schema(
+        tags=["Tickets"],
+        summary="Delete ticket",
+        description="SUPPORT/ADMIN only.",
+    ),
+)
 class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = TicketSerializer
     queryset = Ticket.objects.select_related("created_by", "ad")
@@ -35,17 +69,20 @@ class TicketViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
     @extend_schema(
+        tags=["Tickets"],
+        summary="Respond to ticket",
+        description="SUPPORT/ADMIN responds with a single text response. Ticket owner cannot respond.",
         request=TicketRespondSerializer,
-        responses={200: TicketSerializer},
+        responses={200: TicketSerializer, 403: OpenApiResponse(description="Forbidden")},
         examples=[
             OpenApiExample(
                 "Respond request",
-                value={"support_response": "We received your ticket. Please provide more details.", "status": "IN_PROGRESS"},
+                value={"support_response": "We are investigating.", "status": "IN_PROGRESS"},
                 request_only=True,
             ),
             OpenApiExample(
                 "Respond response",
-                value={"id": 12, "status": "IN_PROGRESS", "support_response": "We received your ticket..."},
+                value={"id": 12, "status": "IN_PROGRESS", "support_response": "We are investigating."},
                 response_only=True,
             ),
         ],

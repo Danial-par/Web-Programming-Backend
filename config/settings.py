@@ -154,13 +154,30 @@ REST_FRAMEWORK = {
 
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "HW2 Service Marketplace API",
-    "DESCRIPTION": "Homework 2 backend (Django + DRF, SQLite).",
-    "VERSION": "0.1.0",
+    "TITLE": "HW2 - Achare Backend (Django + DRF)",
+    "DESCRIPTION": (
+        "Homework 2 backend API.\n\n"
+        "- Roles: CUSTOMER / CONTRACTOR / SUPPORT / ADMIN(superuser)\n"
+        "- Ads lifecycle: OPEN -> ASSIGNED -> DONE, and CANCELED.\n"
+        "- Tickets: any user can create/edit own; SUPPORT can respond/manage all.\n"
+        "- Reviews: customer can rate 1..5 with comment after DONE.\n"
+    ),
+    "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 
-    # Makes Swagger UI keep your token after refresh
-    "SWAGGER_UI_SETTINGS": {
-        "persistAuthorization": True,
+    # Makes request/response components cleaner in Swagger UI:
+    "COMPONENT_SPLIT_REQUEST": True,
+
+    # Show an "Authorize" box for Token auth:
+    "SECURITY": [{"tokenAuth": []}],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "tokenAuth": {
+                "type": "apiKey",
+                "in": "header",
+                "name": "Authorization",
+                "description": "Use: `Token <your_token>`",
+            }
+        }
     },
 }

@@ -6,7 +6,12 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from drf_spectacular.utils import OpenApiExample, extend_schema
+from drf_spectacular.utils import (
+    extend_schema,
+    extend_schema_view,
+    OpenApiExample,
+    OpenApiResponse,
+)
 
 from apps.users.permissions import IsContractorOrAdmin, IsCustomerOrAdmin, is_admin, is_support
 from apps.reviews.models import Review
@@ -25,6 +30,33 @@ from .serializers import (
 User = get_user_model()
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Ads"],
+        summary="List ads",
+        description="Lists ads visible to the current user. CANCELED ads are only visible to owner/support/admin.",
+    ),
+    create=extend_schema(
+        tags=["Ads"],
+        summary="Create ad",
+        description="CUSTOMER creates a new ad. Status defaults to OPEN.",
+    ),
+    retrieve=extend_schema(
+        tags=["Ads"],
+        summary="Retrieve ad",
+        description="Retrieve an ad if it is visible to you.",
+    ),
+    partial_update=extend_schema(
+        tags=["Ads"],
+        summary="Update ad",
+        description="Owner only. Workflow fields are read-only; use lifecycle endpoints.",
+    ),
+    destroy=extend_schema(
+        tags=["Ads"],
+        summary="Delete ad",
+        description="Owner only.",
+    ),
+)
 class AdViewSet(viewsets.ModelViewSet):
     serializer_class = AdSerializer
     queryset = Ad.objects.all()
